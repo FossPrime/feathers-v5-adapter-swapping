@@ -8,7 +8,7 @@ import {
 } from '@feathersjs/koa'
 import socketio from '@feathersjs/socketio'
 import { hooklessSetup } from './hookless'
-import { LowDBService } from 'feathers-lowdb'
+import { LowDBService, LowDBAdapter } from 'feathers-lowdb'
 
 // This tells TypeScript what services we are registering
 type ServiceTypes = {
@@ -29,11 +29,22 @@ app.use(bodyParser())
 app.configure(rest())
 // Configure Socket.io real-time APIs
 app.configure(socketio())
+const db1Adapter = new LowDBAdapter({
+  filename: 'db1.yaml'
+})
+const db2Adapter = new LowDBAdapter({
+  filename: 'db2.yaml'
+})
+// Create messages adapter, manually
+const messagesAdapter = new LowDBAdapter({
+  filename: 'messages.yaml'
+})
 // Register our messages service
 app.use(
   'messages',
   new LowDBService({
-    filename: 'messages.yaml', // or users.json
+    Model: messagesAdapter,
+    // filename: 'messages.yaml', // to setup adapter automatically
     id: 'id', // todo: https://github.com/feathersjs/feathers/issues/2839
     startId: 1,
     paginate: {
@@ -59,6 +70,8 @@ app.service('messages').create({
   text: 'Hello world from the server',
 })
 // context.data.text.toLowerCase().startsWith('sudo')
+
+
 // ==== START - HOOKLESS CUSTOM ====
 const predicate = (c: HookContext) => c.data?.text.startsWith('sudo')
 app.service('messages').hooks({
